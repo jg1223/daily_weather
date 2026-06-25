@@ -77,40 +77,8 @@ def get_wmo(code: int):
 
 
 # ────────────────────────────────────────────────────────────
-# HTML 이메일 생성
+# 이메일 HTML 생성 (table 기반 - 이메일 클라이언트 호환)
 # ────────────────────────────────────────────────────────────
-STYLE = """
-<style>
-  body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-         background:#f0f4f8; margin:0; padding:20px; color:#1a202c; }
-  .wrap { max-width:680px; margin:0 auto; }
-  .header { background:linear-gradient(135deg,#1e3a5f,#2b6cb0);
-            color:#fff; border-radius:12px 12px 0 0; padding:24px 28px; }
-  .header h1 { margin:0 0 4px; font-size:22px; }
-  .header p  { margin:0; font-size:13px; opacity:.8; }
-  .card { background:#fff; border-radius:8px; padding:20px 24px;
-          margin:12px 0; box-shadow:0 1px 3px rgba(0,0,0,.08); }
-  .loc-title { font-size:17px; font-weight:700; margin:0 0 14px;
-               border-bottom:2px solid #ebf4ff; padding-bottom:8px; }
-  .summary-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-  .s-item { background:#f7fafc; border-radius:6px; padding:10px 12px; }
-  .s-label { font-size:11px; color:#718096; margin-bottom:3px; }
-  .s-value { font-size:18px; font-weight:700; }
-  .s-sub   { font-size:12px; color:#4a5568; margin-top:2px; }
-  table.hourly { width:100%; border-collapse:collapse; margin-top:14px; font-size:13px; }
-  table.hourly th { background:#ebf8ff; color:#2c5282; padding:6px 8px;
-                    text-align:center; font-weight:600; }
-  table.hourly td { padding:7px 8px; text-align:center; border-bottom:1px solid #f0f0f0; }
-  table.hourly tr:last-child td { border-bottom:none; }
-  .tomorrow { background:#fffbf0; border:1px solid #fbd38d; border-radius:8px;
-              padding:12px 16px; margin-top:14px; font-size:13px; }
-  .tomorrow strong { color:#c05621; }
-  .footer { text-align:center; font-size:11px; color:#a0aec0; padding:16px; }
-  .rain-badge { display:inline-block; background:#ebf8ff; color:#2b6cb0;
-                border-radius:12px; font-size:11px; padding:2px 8px; margin-left:6px; }
-  .rain-warn { color:#c53030; font-weight:600; }
-</style>
-"""
 
 def build_location_card(loc: dict, data: dict, today: str) -> str:
     cur  = data["current"]
@@ -124,11 +92,11 @@ def build_location_card(loc: dict, data: dict, today: str) -> str:
     wind_dir  = wind_direction_str(cur["wind_direction_10m"])
     cur_desc, cur_emoji = get_wmo(cur["weather_code"])
 
-    today_max = dly["temperature_2m_max"][0]
-    today_min = dly["temperature_2m_min"][0]
+    today_max      = dly["temperature_2m_max"][0]
+    today_min      = dly["temperature_2m_min"][0]
     today_rain_pct = dly["precipitation_probability_max"][0]
-    sunrise   = dly["sunrise"][0].split("T")[1]
-    sunset    = dly["sunset"][0].split("T")[1]
+    sunrise        = dly["sunrise"][0].split("T")[1]
+    sunset         = dly["sunset"][0].split("T")[1]
 
     tmr_max  = dly["temperature_2m_max"][1]
     tmr_min  = dly["temperature_2m_min"][1]
@@ -137,11 +105,13 @@ def build_location_card(loc: dict, data: dict, today: str) -> str:
 
     rain_warn = ""
     if today_rain_pct >= 50:
-        rain_warn = f'<span class="rain-warn"> ☔ 우산 챙기세요!</span>'
+        rain_warn = ' &nbsp;<span style="color:#c0392b;font-weight:bold;">☔ 우산 챙기세요!</span>'
     elif today_rain_pct >= 30:
-        rain_warn = f'<span class="rain-badge">우산 대기</span>'
+        rain_warn = ' &nbsp;<span style="color:#e67e22;">⚠️ 우산 대기</span>'
 
-    # 시간대별 예보 (6·9·12·15·18·21시)
+    tmr_rain_note = f'<span style="color:#c0392b;font-weight:bold;">☔ 우산 필요</span>' if tmr_rain >= 50 else f"{tmr_rain}%"
+
+    # 시간대별 행
     times  = hrly["time"]
     temps  = hrly["temperature_2m"]
     rains  = hrly["precipitation_probability"]
@@ -154,76 +124,143 @@ def build_location_card(loc: dict, data: dict, today: str) -> str:
             idx = times.index(target)
             desc, emoji = get_wmo(wcodes[idx])
             rp = rains[idx] if rains[idx] is not None else 0
-            rp_style = ' style="color:#c53030;font-weight:600"' if rp >= 50 else ""
+            rp_color = "#c0392b" if rp >= 50 else "#2c3e50"
+            rp_weight = "bold" if rp >= 50 else "normal"
+            bg = "#fef9f0" if slot % 2 == 0 else "#ffffff"
             hour_rows += f"""
-            <tr>
-              <td><b>{slot:02d}시</b></td>
-              <td>{emoji} {desc}</td>
-              <td>{temps[idx]:.0f}°C</td>
-              <td{rp_style}>{rp}%</td>
-            </tr>"""
-
-    tmr_rain_note = f'<span class="rain-warn">☔ 우산 필요</span>' if tmr_rain >= 50 else f"{tmr_rain}%"
+                <tr style="background:{bg};">
+                  <td style="padding:8px 12px;font-weight:bold;color:#2c3e50;width:60px;">{slot:02d}시</td>
+                  <td style="padding:8px 12px;color:#34495e;">{emoji} {desc}</td>
+                  <td style="padding:8px 12px;text-align:center;color:#2c3e50;">{temps[idx]:.0f}°C</td>
+                  <td style="padding:8px 12px;text-align:center;color:{rp_color};font-weight:{rp_weight};">{rp}%</td>
+                </tr>"""
 
     return f"""
-    <div class="card">
-      <div class="loc-title">{loc["emoji"]} {loc["name"]}</div>
+    <!-- 지역 카드 -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="background:#ffffff;border-radius:8px;margin-bottom:16px;
+                  border:1px solid #e0e6ed;overflow:hidden;">
+      <!-- 지역 제목 -->
+      <tr>
+        <td style="background:#1a5276;padding:14px 20px;">
+          <span style="color:#ffffff;font-size:17px;font-weight:bold;">
+            {loc['emoji']} {loc['name']}
+          </span>
+        </td>
+      </tr>
 
-      <div class="summary-grid">
-        <div class="s-item">
-          <div class="s-label">현재 날씨</div>
-          <div class="s-value">{cur_emoji} {cur_desc}</div>
-          <div class="s-sub">{cur_temp:.1f}°C &nbsp;(체감 {feels:.1f}°C)</div>
-        </div>
-        <div class="s-item">
-          <div class="s-label">최저 / 최고</div>
-          <div class="s-value">{today_min:.0f}°C / {today_max:.0f}°C</div>
-          <div class="s-sub">강수 확률 {today_rain_pct}%{rain_warn}</div>
-        </div>
-        <div class="s-item">
-          <div class="s-label">습도 / 바람</div>
-          <div class="s-value">{humidity}%</div>
-          <div class="s-sub">{wind_dir}풍 {wind_spd:.1f} m/s</div>
-        </div>
-        <div class="s-item">
-          <div class="s-label">일출 / 일몰</div>
-          <div class="s-value">🌅 {sunrise}</div>
-          <div class="s-sub">🌇 {sunset}</div>
-        </div>
-      </div>
+      <!-- 요약 4칸 -->
+      <tr>
+        <td style="padding:0;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td width="50%" style="padding:14px 20px;border-right:1px solid #eaecee;border-bottom:1px solid #eaecee;vertical-align:top;">
+                <div style="font-size:11px;color:#7f8c8d;margin-bottom:4px;">현재 날씨</div>
+                <div style="font-size:20px;font-weight:bold;color:#1a252f;">{cur_emoji} {cur_desc}</div>
+                <div style="font-size:13px;color:#566573;margin-top:3px;">{cur_temp:.1f}°C &nbsp;(체감 {feels:.1f}°C)</div>
+              </td>
+              <td width="50%" style="padding:14px 20px;border-bottom:1px solid #eaecee;vertical-align:top;">
+                <div style="font-size:11px;color:#7f8c8d;margin-bottom:4px;">최저 / 최고</div>
+                <div style="font-size:20px;font-weight:bold;color:#1a252f;">{today_min:.0f}°C / {today_max:.0f}°C</div>
+                <div style="font-size:13px;color:#566573;margin-top:3px;">강수 확률 {today_rain_pct}%{rain_warn}</div>
+              </td>
+            </tr>
+            <tr>
+              <td width="50%" style="padding:14px 20px;border-right:1px solid #eaecee;vertical-align:top;">
+                <div style="font-size:11px;color:#7f8c8d;margin-bottom:4px;">습도 / 바람</div>
+                <div style="font-size:20px;font-weight:bold;color:#1a252f;">{humidity}%</div>
+                <div style="font-size:13px;color:#566573;margin-top:3px;">{wind_dir}풍 {wind_spd:.1f} m/s</div>
+              </td>
+              <td width="50%" style="padding:14px 20px;vertical-align:top;">
+                <div style="font-size:11px;color:#7f8c8d;margin-bottom:4px;">일출 / 일몰</div>
+                <div style="font-size:20px;font-weight:bold;color:#1a252f;">🌅 {sunrise}</div>
+                <div style="font-size:13px;color:#566573;margin-top:3px;">🌇 {sunset}</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
 
-      <table class="hourly">
-        <tr>
-          <th>시간</th><th>날씨</th><th>기온</th><th>강수 확률</th>
-        </tr>
-        {hour_rows}
-      </table>
+      <!-- 시간대별 예보 테이블 -->
+      <tr>
+        <td style="padding:0;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr style="background:#d6eaf8;">
+              <th style="padding:9px 12px;text-align:left;font-size:12px;color:#1a5276;font-weight:bold;width:60px;">시간</th>
+              <th style="padding:9px 12px;text-align:left;font-size:12px;color:#1a5276;font-weight:bold;">날씨</th>
+              <th style="padding:9px 12px;text-align:center;font-size:12px;color:#1a5276;font-weight:bold;">기온</th>
+              <th style="padding:9px 12px;text-align:center;font-size:12px;color:#1a5276;font-weight:bold;">강수 확률</th>
+            </tr>
+            {hour_rows}
+          </table>
+        </td>
+      </tr>
 
-      <div class="tomorrow">
-        <strong>내일 예보</strong> &nbsp;
-        {tmr_emoji} {tmr_desc} &nbsp;|&nbsp;
-        최저 {tmr_min:.0f}°C / 최고 {tmr_max:.0f}°C &nbsp;|&nbsp;
-        강수 확률 {tmr_rain_note}
-      </div>
-    </div>"""
+      <!-- 내일 예보 -->
+      <tr>
+        <td style="background:#fef9e7;padding:12px 20px;border-top:1px solid #f9e79f;">
+          <span style="font-size:13px;color:#7d6608;font-weight:bold;">내일 예보</span>
+          <span style="font-size:13px;color:#5d4037;">
+            &nbsp; {tmr_emoji} {tmr_desc} &nbsp;|&nbsp;
+            최저 {tmr_min:.0f}°C / 최고 {tmr_max:.0f}°C &nbsp;|&nbsp;
+            강수 확률 {tmr_rain_note}
+          </span>
+        </td>
+      </tr>
+    </table>"""
 
 
 def build_html(cards: str, date_str: str, weekday: str) -> str:
     return f"""<!DOCTYPE html>
 <html lang="ko">
-<head><meta charset="UTF-8">{STYLE}</head>
-<body>
-<div class="wrap">
-  <div class="header">
-    <h1>🌤️ 오늘의 날씨 브리핑</h1>
-    <p>{date_str} ({weekday}) &nbsp;·&nbsp; Open-Meteo 기반</p>
-  </div>
-  {cards}
-  <div class="footer">
-    자동 발송 · Daily Weather Briefing · Open-Meteo API
-  </div>
-</div>
-</body></html>"""
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f0f3f4;font-family:'Apple SD Gothic Neo','Malgun Gothic',Arial,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f3f4;">
+  <tr>
+    <td align="center" style="padding:24px 16px;">
+
+      <!-- 최대 너비 래퍼 -->
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+        <!-- 헤더 -->
+        <tr>
+          <td style="background:#1a5276;border-radius:8px 8px 0 0;padding:24px 28px;">
+            <div style="color:#ffffff;font-size:22px;font-weight:bold;margin-bottom:4px;">
+              🌤️ 오늘의 날씨 브리핑
+            </div>
+            <div style="color:#aed6f1;font-size:13px;">
+              {date_str} ({weekday}) &nbsp;·&nbsp; Open-Meteo 기반
+            </div>
+          </td>
+        </tr>
+
+        <!-- 본문 배경 -->
+        <tr>
+          <td style="background:#f0f3f4;padding:16px 0;">
+            {cards}
+          </td>
+        </tr>
+
+        <!-- 푸터 -->
+        <tr>
+          <td style="background:#eaecee;border-radius:0 0 8px 8px;
+                     padding:14px 28px;text-align:center;
+                     font-size:11px;color:#95a5a6;">
+            자동 발송 · Daily Weather Briefing · Open-Meteo API
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>"""
 
 
 # ────────────────────────────────────────────────────────────
