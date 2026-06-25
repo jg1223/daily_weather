@@ -1,0 +1,31 @@
+name: Daily Weather Briefing
+
+on:
+  schedule:
+    # KST 01:00 = UTC 16:00 (전날)
+    - cron: '0 16 * * *'
+  workflow_dispatch:  # 수동 실행 버튼
+
+jobs:
+  send-weather:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send weather briefing
+        env:
+          SENDER_EMAIL:    ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+        run: python src/weather_briefing.py

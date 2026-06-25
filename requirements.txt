@@ -1,0 +1,3 @@
+# Open-Meteo API는 urllib(표준 라이브러리)로 호출 → 추가 패키지 없음
+# 이메일도 smtplib(표준 라이브러리) 사용
+# 현재 이 파일은 placeholder — 추후 패키지 추가 시 여기에 작성
