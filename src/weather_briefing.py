@@ -13,9 +13,9 @@ from datetime import datetime, timezone, timedelta
 KST = timezone(timedelta(hours=9))
 
 LOCATIONS = [
-    {"name": "경기 김포 고촌",  "lat": 37.6089, "lon": 126.7728, "emoji": "🏘️"},
-    {"name": "서울",            "lat": 37.5665, "lon": 126.9780, "emoji": "🏙️"},
-    {"name": "강원 동해",       "lat": 37.5244, "lon": 129.1144, "emoji": "🌊"},
+    {"name": "경기 김포 고촌",  "lat": 37.6089, "lon": 126.7728, "emoji": "🏘️", "naver_url": "https://weather.naver.com/today/02570253"},
+    {"name": "서울 여의도",     "lat": 37.5219, "lon": 126.9245, "emoji": "🏙️", "naver_url": "https://weather.naver.com/today/09560110"},
+    {"name": "강원 동해",       "lat": 37.5244, "lon": 129.1144, "emoji": "🌊", "naver_url": "https://weather.naver.com/today/01170101"},
 ]
 
 WMO_CODE = {
@@ -143,9 +143,9 @@ def build_location_card(loc: dict, data: dict, today: str) -> str:
       <!-- 지역 제목 -->
       <tr>
         <td style="background:#1a5276;padding:14px 20px;">
-          <span style="color:#ffffff;font-size:17px;font-weight:bold;">
-            {loc['emoji']} {loc['name']}
-          </span>
+          <a href="{loc['naver_url']}" target="_blank" style="color:#ffffff;font-size:17px;font-weight:bold;text-decoration:none;">
+            {loc['emoji']} {loc['name']} &nbsp;<span style="font-size:12px;opacity:0.75;">↗ 네이버 날씨</span>
+          </a>
         </td>
       </tr>
 
@@ -204,7 +204,7 @@ def build_location_card(loc: dict, data: dict, today: str) -> str:
             &nbsp; {tmr_emoji} {tmr_desc} &nbsp;|&nbsp;
             최저 {tmr_min:.0f}°C / 최고 {tmr_max:.0f}°C &nbsp;|&nbsp;
             강수 확률 {tmr_rain_note}
-          </span>
+          </a>
         </td>
       </tr>
     </table>"""
