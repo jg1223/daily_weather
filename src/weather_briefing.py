@@ -3,6 +3,7 @@ import urllib.parse
 import json
 import smtplib
 import os
+import time   # ← 이 줄 추가
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timezone, timedelta
@@ -266,7 +267,7 @@ def build_html(cards: str, date_str: str, weekday: str) -> str:
 # ────────────────────────────────────────────────────────────
 # 이메일 발송
 # ────────────────────────────────────────────────────────────
-def send_email(subject: str, html_body: str):
+def send_email(subject: str, html_body: str, max_retries: int = 3):
     sender    = os.environ["SENDER_EMAIL"]
     password  = os.environ["SENDER_PASSWORD"]
     recipient = os.environ["RECIPIENT_EMAIL"]
@@ -277,10 +278,21 @@ def send_email(subject: str, html_body: str):
     msg["To"]      = recipient
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(sender, password)
-        smtp.sendmail(sender, recipient, msg.as_string())
-    print(f"✅ 발송 완료 → {recipient}")
+    for attempt in range(1, max_retries + 1):
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                smtp.login(sender, password)
+                smtp.sendmail(sender, recipient, msg.as_string())
+            print(f"✅ 발송 완료 → {recipient} (시도 {attempt}회)")
+            return
+        except smtplib.SMTPException as e:
+            print(f"⚠️ 발송 실패 (시도 {attempt}/{max_retries}): {e}")
+            if attempt == max_retries:
+                print("❌ 최대 재시도 횟수 초과. 발송 실패로 종료합니다.")
+                raise
+            wait_time = 10 * (2 ** (attempt - 1))  # 10초 → 20초 → 40초
+            print(f"⏳ {wait_time}초 대기 후 재시도...")
+            time.sleep(wait_time)
 
 
 # ────────────────────────────────────────────────────────────
