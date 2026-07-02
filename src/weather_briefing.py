@@ -246,6 +246,43 @@ def build_html(cards: str, date_str: str, weekday: str) -> str:
           </td>
         </tr>
 
+        <!-- 외부 링크 -->
+        <tr>
+          <td style="padding:0 0 16px 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background:#ffffff;border-radius:8px;
+                          border:1px solid #e0e6ed;overflow:hidden;">
+              <tr>
+                <td style="background:#1a5276;padding:12px 20px;">
+                  <span style="color:#ffffff;font-size:15px;font-weight:bold;">🔗 추가 정보</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:14px 20px;border-bottom:1px solid #eaecee;">
+                  <a href="https://earth.nullschool.net/ko/#current/chem/surface/level/overlay=cosc/orthographic=126.26,37.24,7870/loc=126.891,37.637"
+                     target="_blank" style="color:#1a5276;font-size:14px;font-weight:bold;text-decoration:none;">
+                    🌍 earth.nullschool.net — 전세계 바람·날씨·해양 지도
+                  </a>
+                  <div style="font-size:12px;color:#7f8c8d;margin-top:3px;">
+                    실시간 바람 흐름과 대기 상태를 지구본 형태로 확인
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:14px 20px;">
+                  <a href="https://www.misemise.co.kr/"
+                     target="_blank" style="color:#1a5276;font-size:14px;font-weight:bold;text-decoration:none;">
+                    😷 미세미세 — 미세먼지·초미세먼지 지도
+                  </a>
+                  <div style="font-size:12px;color:#7f8c8d;margin-top:3px;">
+                    지역별 실시간 미세먼지·초미세먼지 농도 확인
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
         <!-- 푸터 -->
         <tr>
           <td style="background:#eaecee;border-radius:0 0 8px 8px;
